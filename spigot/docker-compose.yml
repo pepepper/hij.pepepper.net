@@ -1,0 +1,11 @@
+version: '3'
+services:
+  spigot_server:
+    image: marctv/minecraft-papermc-server:1.19
+    volumes:
+      - ./data/:/data/:rw
+    ports:
+      - "25565:25565"
+    restart: unless-stopped
+    stdin_open: true
+    tty: true

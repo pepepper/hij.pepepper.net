@@ -1,0 +1,94 @@
+version: '3'
+services:
+  mstdn-db:
+    restart: unless-stopped
+    image: postgres:14-alpine
+    shm_size: 256mb
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'mastodon']
+    volumes:
+      - ./postgres14:/var/lib/postgresql/data
+    env_file: .env-db
+
+  mstdn-redis:
+    restart: unless-stopped
+    image: redis:6-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+    volumes:
+      - ./redis:/data
+
+  # es:
+  #   restart: always
+  #   image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
+  #   environment:
+  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+  #     - "cluster.name=es-mastodon"
+  #     - "discovery.type=single-node"
+  #     - "bootstrap.memory_lock=true"
+  #   networks:
+  #      - default
+  #   healthcheck:
+  #      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+  #   volumes:
+  #      - ./elasticsearch:/usr/share/elasticsearch/data
+  #   ulimits:
+  #     memlock:
+  #       soft: -1
+  #       hard: -1
+
+  mstdn-web:
+    image: tootsuite/mastodon
+    restart: unless-stopped
+    env_file: .env.production
+    command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000"
+    healthcheck:
+      # prettier-ignore
+      test: ['CMD-SHELL', 'wget -q --spider --proxy=off localhost:3000/health || exit 1']
+    depends_on:
+      - mstdn-db
+      - mstdn-redis
+      # - es
+    volumes:
+      - ./public/system:/mastodon/public/system
+
+  mstdn-streaming:
+    image: tootsuite/mastodon
+    restart: unless-stopped
+    env_file: .env.production
+    command: node ./streaming
+    healthcheck:
+      # prettier-ignore
+      test: ['CMD-SHELL', 'wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1']
+    depends_on:
+      - mstdn-db
+      - mstdn-redis
+
+  sidekiq:
+    image: tootsuite/mastodon
+    restart: unless-stopped
+    env_file: .env.production
+    command: bundle exec sidekiq
+    depends_on:
+      - mstdn-db
+      - mstdn-redis
+    volumes:
+      - ./public/system:/mastodon/public/system
+    healthcheck:
+      test: ['CMD-SHELL', "ps aux | grep '[s]idekiq\ 6' || false"]
+
+  mstdn-nginx:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    depends_on:
+      - mstdn-web
+      - mstdn-streaming
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d:ro
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    depends_on:
+      - mstdn-nginx
+    command: tunnel --no-autoupdate run --token $CLOUDFLARED_TOKEN

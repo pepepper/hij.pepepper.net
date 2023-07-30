@@ -1,0 +1,20 @@
+version: '3'
+services:
+  univ-postgres:
+    image: postgres:14-alpine
+    restart: unless-stopped
+    volumes:
+      - ./database:/var/lib/postgresql/data
+    env_file:
+      - db.env
+  univ-pgadmin:
+    image: adminer:latest
+    restart: unless-stopped
+    env_file:
+      - pgadmin.env
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token $CLOUDFLARED_TOKEN
+    depends_on:
+      - univ-pgadmin

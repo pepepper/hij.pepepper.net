@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  floko_barbet:
+    restart: "no"
+    build:
+      context: .
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+    command: [barbet, -s]
+    environment:
+       WITH_GMS: true
+    user: "1000:1000"
+    volumes:
+      - type: bind
+        source: "/build/log"
+        target: "/log"
+      - type: bind
+        source: "/build/zenFloko"
+        target: "/source"
+      - type: bind
+        source: "/build/Floko"
+        target: "/output"
+      - type: bind
+        source: "/build/ccache"
+        target: "/ccache"
+      - home:/home/android/
+
+volumes:
+  home:

@@ -1,0 +1,11 @@
+[general]
+    location_id = "HIJ"
+    location_pretty = "Hiroshima, Japan"
+    domain = "hij.pepepper.net"
+
+[http]
+    destinations = [
+        "https://www.microsoft.com",
+        "https://kix.pepepper.net",
+        "https://hij.yude.jp"
+    ]

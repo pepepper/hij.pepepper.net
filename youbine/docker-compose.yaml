@@ -1,0 +1,26 @@
+services:
+  youbine-db:
+    image: postgres:latest
+    restart: unless-stopped
+    env_file:
+      - .env-app
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+
+  youbine:
+    image: ghcr.io/yude/youbine:master
+    # build:
+    #   context: app
+    #   dockerfile: ./Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env-app
+    depends_on:
+      - youbine-db
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    depends_on:
+      - youbine
+    command: tunnel --no-autoupdate run --token $CLOUDFLARED_TOKEN

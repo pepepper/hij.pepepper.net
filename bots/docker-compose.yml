@@ -1,0 +1,27 @@
+version: "3"
+services:
+  mastodon_markov_bot:
+    build:
+      context: mastodon-markov-bot
+    restart: unless-stopped
+    volumes:
+      - "./mastodon-markov-bot/src:/scripts"
+    environment:
+      TZ: "Asia/Tokyo"
+      FLASK_ENV: "development"
+    tty: true
+    command: >
+      /bin/bash -c "
+      cd /scripts &&
+      python3 app.py"
+
+  markov-toot:
+      restart: unless-stopped
+      image: ghcr.io/yuderobot/markov-toot:master
+      volumes:
+        - "./markov-toot/data:/app/data"
+  
+  ace-attorney-mastodon-bot:
+    restart: unless-stopped
+    build: 
+      context: ace-attorney-mastodon-bot

@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  samba:
+    image: servercontainers/samba
+    volumes:
+      - /mnt/hdd:/shares/share
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    env_file:
+      - .env
+    network_mode: host
+    environment:
+      AVAHI_DISABLE: true
+      WSDD2_DISABLE: true
